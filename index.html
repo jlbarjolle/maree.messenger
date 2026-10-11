@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b5f78">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Marée">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Marée Messenger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Lagune claire : une colonne de téléphone, cartes blanches sur fond d'eau claire, onglets en bas. */
+:root{
+  --bg:#eaf3f5; --surface:#ffffff; --ink:#0f2633; --muted:#4f6b77; --line:#d6e3e7;
+  --accent:#0b5f78; --accent-soft:#d5eaf0; --on-accent:#ffffff;
+  --ok:#21a26b; --warn:#f2a03d; --ground:#c8d1d5; --night:#0f3550;
+  --display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0a1a21; --surface:#12262e; --ink:#e3eef2; --muted:#8ea7b1; --line:#22404b;
+  --accent:#4fb3d3; --accent-soft:#17394a; --on-accent:#06202a;
+  --ok:#34c483; --warn:#f2a547; --ground:#3b4c53; --night:#000000; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0a1a21; --surface:#12262e; --ink:#e3eef2; --muted:#8ea7b1; --line:#22404b;
+  --accent:#4fb3d3; --accent-soft:#17394a; --on-accent:#06202a;
+  --ok:#34c483; --warn:#f2a547; --ground:#3b4c53; --night:#000000; color-scheme:dark}
+*{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.4}
+.app{max-width:560px;margin:0 auto;padding-inline:12px;padding-block:16px 110px}
+button,input{font-family:inherit}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-inline:8px}
+.round{width:44px;height:44px;border-radius:22px;border:0;background:var(--surface);color:var(--ink);font-size:22px;cursor:pointer;flex:none}
+.title{text-align:center;min-width:0}
+.title label{position:relative;display:inline-block;cursor:pointer}
+.title h1{font-family:var(--display);font-weight:800;font-size:26px;line-height:1.1;margin:0}
+#date{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer}
+.info{font-size:13px;color:var(--muted);margin-top:2px;display:flex;flex-wrap:wrap;justify-content:center;gap:2px 6px;align-items:center}
+.info input{width:62px;-moz-appearance:textfield;font-size:13px;color:var(--ink);background:transparent;border:0;border-bottom:1px dashed var(--muted);padding:0 2px;text-align:right}
+.card{background:var(--surface);border-radius:24px}
+.chart{margin-top:16px;padding:14px 12px 8px}
+.chart svg{display:block;width:100%;height:auto}
+.now{margin:10px 12px 0;font-size:14px;color:var(--muted)}
+.now b{color:var(--ink)}
+h2{margin:18px 12px 8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.list{display:flex;flex-direction:column;gap:8px}
+.short{border-radius:18px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.big{font-family:var(--display);font-weight:800;font-size:21px;font-variant-numeric:tabular-nums}
+.sub{font-size:13px;color:var(--muted)}
+.sec{font-size:12px;color:var(--muted);text-align:right;flex:none}
+.next{outline:2px solid var(--ok)}
+.long{border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.long .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.long .top .big{font-size:18px}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tile{background:var(--bg);border-radius:12px;padding:8px 12px;min-width:0}
+.tile .v{font-weight:700;font-size:17px;font-variant-numeric:tabular-nums}
+.empty{margin:0 12px;font-size:14px;color:var(--muted)}
+.foot{margin:14px 12px 0;font-size:12px;color:var(--muted)}
+.meteo{margin:14px 12px 0;display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+.meteo b{color:var(--ink)}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;padding:0 12px calc(16px + env(safe-area-inset-bottom,0px));pointer-events:none}
+nav.tabs .bar{max-width:536px;margin:0 auto;background:var(--surface);border-radius:26px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:6px;pointer-events:auto;box-shadow:0 6px 24px rgba(15,38,51,.12)}
+nav.tabs button{border:0;background:transparent;color:var(--muted);font-size:14px;padding:12px 0;border-radius:20px;cursor:pointer}
+nav.tabs button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent);font-weight:700}
+.page-title{font-family:var(--display);font-weight:800;font-size:30px;margin:8px 12px 4px}
+form.settings{padding:8px 16px;display:grid}
+.field{display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:2px 12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.field:last-of-type{border-bottom:0}
+.field label{font-weight:700}
+.field .hint{grid-column:1 / -1;font-size:13px;color:var(--muted)}
+.field select{width:100%;font-size:16px;color:var(--ink);background:var(--bg);border:0;border-radius:10px;padding:9px 10px}
+.field input{width:100%;font-size:16px;color:var(--ink);background:var(--bg);border:0;border-radius:10px;padding:9px 10px;text-align:right}
+.field input[type=text]{text-align:left}
+.check{display:flex;gap:10px;align-items:center;font-weight:700;padding:12px 0}
+.check input{width:22px;height:22px}
+.btn{border:0;background:var(--accent);color:var(--on-accent);font-weight:700;border-radius:14px;padding:12px 16px;cursor:pointer;font-size:15px}
+.src{margin:14px 12px 0;font-size:12px;color:var(--muted)}
+.src a{color:var(--accent)}
+.obsbox{padding:12px}
+.obsgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.obsbtn{border:0;border-radius:14px;background:var(--bg);color:var(--ink);font-weight:700;font-size:15px;padding:14px 8px;cursor:pointer}
+.obsbtn[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.obspanel{margin-top:12px;display:grid;gap:10px}
+.obsrow{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.obsrow label{font-weight:700}
+.obsrow input,.obsrow select,textarea{font-size:16px;color:var(--ink);background:var(--bg);border:0;border-radius:10px;padding:9px 10px}
+textarea{width:100%;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;resize:vertical}
+.msg{margin:0;background:var(--bg);border-radius:10px;padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;white-space:pre-wrap;word-break:break-word}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+a.btn{text-decoration:none;display:inline-block}
+.btn.ghost{background:var(--accent-soft);color:var(--accent)}
+.crow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.crow:last-child{border-bottom:0}
+.crow .ec{font-variant-numeric:tabular-nums;font-weight:700}
+.del{border:0;background:transparent;color:var(--muted);font-size:18px;width:36px;height:36px;cursor:pointer}
+.crit{margin:10px 2px 0}
+.prop{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;font-size:15px}
+.prop b{font-variant-numeric:tabular-nums}
+
+</style>
+</head>
+<body>
+
+<div class="app">
+<section id="p-maree">
+  <div class="head">
+    <button class="round" id="prev" aria-label="Jour précédent">‹</button>
+    <div class="title">
+      <label for="date"><h1 id="dayname">–</h1><input type="date" id="date"></label>
+      <div class="info"><span id="coef"></span><span>·</span><span><input type="number" id="pressure" min="950" max="1060" step="1" aria-label="Pression de référence en hPa, vide pour la prévision"> hPa <span id="pmode"></span></span><span>·</span><span id="sun"></span></div>
+    </div>
+    <button class="round" id="next" aria-label="Jour suivant">›</button>
+  </div>
+  <div class="card chart"><div id="chart"></div></div>
+  <p class="now" id="now" hidden></p>
+  <h2>Sorties courtes</h2>
+  <div class="list" id="courtes"></div>
+  <h2>Sorties longues</h2>
+  <div class="list" id="longues"></div>
+  <div class="meteo" id="meteo" hidden></div>
+  <p class="foot" id="foot"></p>
+</section>
+
+<section id="p-bateau" hidden>
+  <h1 class="page-title">Bateau</h1>
+  <div class="card"><form class="settings" autocomplete="off">
+    <div class="field"><label for="b-name">Nom du bateau</label><input type="text" id="b-name" data-k="boat.name"></div>
+    <div class="field"><label for="c-me">Votre prénom</label><input type="text" id="c-me" data-k="crew.me"><span class="hint">Signe vos observations.</span></div>
+    <div class="field"><label for="c-mgr">Gestionnaire</label><input type="text" id="c-mgr" data-k="crew.mgrName"><span class="hint">Reçoit les observations et diffuse les mises à jour.</span></div>
+    <div class="field"><label for="c-tel">Téléphone du gestionnaire</label><input type="text" inputmode="tel" id="c-tel" data-k="crew.mgrTel"></div>
+    <div class="field"><label for="c-mail">E-mail du gestionnaire</label><input type="text" inputmode="email" id="c-mail" data-k="crew.mgrMail"></div>
+
+    <div class="field"><label for="b-teB">Tirant d'eau dérive basse (m)</label><input type="number" step="0.05" id="b-teB" data-k="boat.teB"><span class="hint">En dessous, la dérive touche et se relève.</span></div>
+    <div class="field"><label for="b-teR">Tirant d'eau dérive relevée (m)</label><input type="number" step="0.05" id="b-teR" data-k="boat.teR"><span class="hint">En dessous, le bateau est posé.</span></div>
+    <div class="field"><label for="b-trajet">Trajet K1 → place (min)</label><input type="number" step="1" id="b-trajet" data-k="boat.trajet"></div>
+    <div class="field"><label for="b-pied">Pied de pilote (m)</label><input type="number" step="0.05" id="b-pied" data-k="boat.pied"><span class="hint">Marge contre l'échouage, selon votre aversion au risque. Avance les heures de secours.</span></div>
+    <div class="field"><label for="b-S">Hauteur Eyrac au décollage (m)</label><input type="number" step="0.05" id="b-S" data-k="boat.S"><span class="hint">Calage provisoire 1,90 m, d'après la règle « sûr de passer avec 2,5 m à Eyrac ».</span></div>
+  </form></div>
+</section>
+
+<section id="p-reglages" hidden>
+  <h1 class="page-title">Réglages</h1>
+  <div class="card"><form class="settings" autocomplete="off">
+    <div class="field"><label for="m-src">Source des marées</label><select id="m-src" data-k="model.src"><option value="api">api-maree.fr</option><option value="shom">Annuaire SHOM</option></select><span class="hint">api-maree : 30 prochains jours, mis à jour automatiquement. Annuaire SHOM : mois importés dans l'onglet Calibrage, pour votre usage personnel.</span></div>
+    <div class="field"><label for="m-key">Clé api-maree</label><input type="text" id="m-key" data-k="model.apiKey" autocomplete="off" spellcheck="false" style="text-align:left;font-size:13px"><span class="hint" id="tideStatus"></span><span class="hint"><button type="button" class="btn ghost" id="tideReload" style="padding:8px 12px;font-size:14px">Recharger les marées</button></span></div>
+    <div class="field"><label for="m-dtUp">Décalage Eyrac → La Teste, montée (min)</label><input type="number" step="1" id="m-dtUp" data-k="model.dtUp"><span class="hint">+10 min d'après le guide d'Henry Legendre.</span></div>
+    <div class="field"><label for="m-dtDown">Décalage, descente (min)</label><input type="number" step="1" id="m-dtDown" data-k="model.dtDown"></div>
+    <div class="field"><label for="m-p">Pression par défaut (hPa)</label><input type="number" step="1" id="m-p" data-k="model.pDefault"><span class="hint">+1 cm d'eau par hPa sous 1013.</span></div>
+    <div class="field"><label for="m-unc">Incertitude affichée (min)</label><input type="number" step="5" id="m-unc" data-k="model.unc"></div>
+    <div class="field"><label for="m-minlen">Durée minimale d'une sortie (min)</label><input type="number" step="5" id="m-minlen" data-k="model.minLen"></div>
+    <div class="field"><label for="m-a">Rapport d'amplitude a</label><input type="number" step="0.01" id="m-a" data-k="model.a"><span class="hint">Option avancée, 1 par défaut.</span></div>
+    <div class="field"><label for="m-b">Correction de hauteur b (m)</label><input type="number" step="0.01" id="m-b" data-k="model.b"><span class="hint">Option avancée, 0 par défaut.</span></div>
+    <label class="check"><input type="checkbox" id="m-cal" data-k="model.calibrated"> Modèle calibré</label>
+    <div style="padding:8px 0 12px"><button type="button" class="btn" id="reset">Revenir aux valeurs de départ</button> <span class="foot" id="resetmsg" role="status"></span></div>
+  </form></div>
+  <h2>Mise à jour reçue du gestionnaire</h2>
+  <div class="card" style="padding:14px 16px">
+    <textarea id="paramIn" rows="3" placeholder="Collez ici le message MM1 PARAM reçu"></textarea>
+    <div class="actions"><button type="button" class="btn" id="paramApply">Appliquer la mise à jour</button></div>
+    <p class="sub" id="paramMsg" role="status"></p>
+  </div>
+  <p class="src">Sources des marées : voir l'onglet Calibrage. Aide à la planification : ne remplace ni les documents nautiques ni le jugement du chef de bord.</p>
+</section>
+<section id="p-gestion" hidden>
+  <h1 class="page-title">Calibrage</h1>
+  <p class="foot" style="margin-top:0">Chacun note ici ce qu'il observe au bateau. Le gestionnaire reçoit les observations, calibre et diffuse les mises à jour.</p>
+  <h2>Noter une observation</h2>
+  <div class="card obsbox">
+    <div class="obsgrid">
+      <button type="button" class="obsbtn" data-obs="decolle">Vient de décoller</button>
+      <button type="button" class="obsbtn" data-obs="pose">Vient de se poser</button>
+      <button type="button" class="obsbtn" data-obs="flotte">Flotte</button>
+      <button type="button" class="obsbtn" data-obs="echoue">Est posé</button>
+      <button type="button" class="obsbtn" data-obs="derive">Dérive a touché</button>
+      <button type="button" class="obsbtn" data-obs="passe">Passé sans toucher</button>
+    </div>
+    <p class="sub crit"><b>Vient de décoller</b> : le bateau bouge librement, sans effort. <b>Vient de se poser</b> : il ne bouge plus quand on tire une amarre.</p>
+    <div id="obsPanel" class="obspanel" hidden>
+      <div class="obsrow"><span id="obsLabel" style="font-weight:700">Observation</span></div>
+      <div class="obsrow"><label for="obsDate">Date</label><input type="date" id="obsDate"></div>
+      <div class="obsrow"><label for="obsTime">Heure</label><input type="time" id="obsTime"></div>
+      <div class="obsrow" id="obsLieuRow"><label for="obsLieu">Lieu</label><select id="obsLieu"><option value="place">À la place</option><option value="port">Dans le port</option><option value="chenal">Dans le chenal</option></select></div>
+      <pre class="msg" id="obsMsg"></pre>
+      <div class="actions">
+        <a class="btn" id="obsSms" href="#">SMS</a>
+        <a class="btn" id="obsMail" href="#">E-mail</a>
+        <button type="button" class="btn ghost" id="obsCopy">Copier</button>
+      </div>
+      <p class="sub" id="obsNote"></p>
+    </div>
+  </div>
+  <h1 class="page-title" style="font-size:22px;margin-top:28px">Gestionnaire</h1>
+  <h2>Recevoir des observations</h2>
+  <div class="card" style="padding:14px 16px">
+    <textarea id="obsIn" rows="4" placeholder="Collez ici un ou plusieurs messages MM1 OBS"></textarea>
+    <div class="actions"><button type="button" class="btn" id="obsImport">Ajouter au carnet</button></div>
+    <p class="sub" id="obsImportMsg" role="status"></p>
+  </div>
+  <h2>Proposition de calibrage</h2>
+  <div class="card" style="padding:14px 16px" id="calib"></div>
+  <h2>Carnet</h2>
+  <div class="card" style="padding:6px 16px" id="carnet"></div>
+  <div class="actions" style="margin:10px 12px 0"><button type="button" class="btn ghost" id="carnetCopy">Copier tout le carnet</button></div>
+  <pre class="msg" id="carnetDump" hidden style="margin:10px 12px 0"></pre>
+  <p class="foot" id="carnetMsg">Sauvegarde : collez le carnet dans une note ou un e-mail à vous-même. Il se réimporte tel quel dans « Recevoir des observations ».</p>
+  <h2>Importer un annuaire SHOM</h2>
+  <div class="card" style="padding:14px 16px">
+    <p class="sub" style="margin-top:0">Copiez le tableau d'un mois depuis l'annuaire PDF du Parc naturel marin (Arcachon-Eyrac, heure légale) et collez-le ici. À réserver à votre usage personnel.</p>
+    <div class="obsrow"><label for="impYear">Année</label><input type="number" id="impYear" min="2026" max="2035" step="1" style="width:100px"></div>
+    <div class="obsrow" style="margin-top:8px"><label for="impMonth">Mois</label><select id="impMonth"><option value="1">Janvier</option><option value="2">Février</option><option value="3">Mars</option><option value="4">Avril</option><option value="5">Mai</option><option value="6">Juin</option><option value="7">Juillet</option><option value="8">Août</option><option value="9">Septembre</option><option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option></select></div>
+    <textarea id="impText" rows="6" style="margin-top:10px" placeholder="08:59 4.16 82 21:25 4.00 75 02:51 0.72 15:12 0.74&#10;…"></textarea>
+    <div class="actions"><button type="button" class="btn" id="impGo">Importer ce mois</button></div>
+    <p class="sub" id="impMsg" role="status"></p>
+    <div id="impList"></div>
+  </div>
+  <h2>Sources</h2>
+  <p class="src" id="srcApi" style="margin-top:0">Données de marée fournies par api-maree.fr sous licence CC BY, calculées à partir de composantes harmoniques Ifremer / PREVIMER, elles-mêmes sous licence CC BY.</p>
+  <p class="src" id="srcShom">Annuaire SHOM (option) : prédictions SHOM pour Arcachon-Eyrac, importées par l'utilisateur pour son usage personnel.</p>
+  <p class="src">Météo et pression : Open-Meteo (licence CC BY 4.0), modèles Météo-France AROME et ARPEGE.</p>
+</section>
+</div>
+
+<nav class="tabs" aria-label="Onglets"><div class="bar" role="tablist">
+  <button role="tab" aria-selected="true" data-tab="maree">Marée</button>
+  <button role="tab" aria-selected="false" data-tab="bateau">Bateau</button>
+  <button role="tab" aria-selected="false" data-tab="reglages">Réglages</button>
+  <button role="tab" aria-selected="false" data-tab="gestion">Calibrage</button>
+</div></nav>
+
+<script>
+const SEED_API=[[1790816400,96,0,0],[1790838180,407,1,82],[1790860980,96,0,0],[1790883180,391,1,75],[1790905500,120,0,0],[1790927640,388,1,68],[1790950500,119,0,0],[1790973180,365,1,60],[1790995200,145,0,0],[1791018120,370,1,53],[1791040800,140,0,0],[1791064080,346,1,46],[1791085740,163,0,0],[1791109200,363,1,41],[1791131820,150,0,0],[1791155220,342,1,40],[1791176820,166,0,0],[1791200220,370,1,43],[1791222960,142,0,0],[1791246060,355,1,48],[1791267840,150,0,0],[1791290820,390,1,55],[1791313620,120,0,0],[1791336240,377,1,62],[1791358140,123,0,0],[1791380760,414,1,70],[1791403440,94,0,0],[1791425820,400,1,77],[1791447780,95,0,0],[1791470220,433,1,83],[1791492780,73,0,0],[1791514980,419,1,87],[1791536940,73,0,0],[1791559320,445,1,91],[1791581700,61,0,0],[1791603840,430,1,94],[1791625860,60,0,0],[1791648120,446,1,95],[1791670440,57,0,0],[1791692460,433,1,95],[1791714600,58,0,0],[1791736740,440,1,95],[1791759060,63,0,0],[1791781020,430,1,93],[1791803280,64,0,0],[1791825300,427,1,91],[1791847560,75,0,0],[1791869460,422,1,88],[1791891900,77,0,0],[1791913800,409,1,83],[1791936060,93,0,0],[1791957960,409,1,79],[1791980520,95,0,0],[1792002360,388,1,74],[1792024560,114,0,0],[1792046520,392,1,68],[1792069200,117,0,0],[1792091040,366,1,62],[1792113180,137,0,0],[1792135260,374,1,56],[1792158060,140,0,0],[1792180080,345,1,50],[1792202040,160,0,0],[1792224480,355,1,43],[1792247340,162,0,0],[1792269840,326,1,37],[1792291440,181,0,0],[1792314600,339,1,32],[1792337280,180,0,0],[1792360380,315,1,28],[1792381860,195,0,0],[1792405320,333,1,25],[1792427940,186,0,0],[1792451040,317,1,26],[1792472700,195,0,0],[1792495800,340,1,29],[1792518540,177,0,0],[1792541280,331,1,34],[1792563240,180,0,0],[1792585860,357,1,41],[1792608660,156,0,0],[1792631040,353,1,48],[1792653120,155,0,0],[1792675500,381,1,55],[1792698180,129,0,0],[1792720380,379,1,62],[1792742520,125,0,0],[1792764780,407,1,69],[1792787400,102,0,0],[1792809480,404,1,76],[1792831680,97,0,0],[1792853880,429,1,82],[1792876380,79,0,0],[1792898460,424,1,87],[1792920660,74,0,0],[1792942920,444,1,92],[1792965300,65,0,0],[1792987380,437,1,95],[1793009640,59,0,0],[1793031840,450,1,98],[1793054160,60,0,0],[1793076240,442,1,99],[1793098560,54,0,0],[1793120820,445,1,100],[1793143080,66,0,0],[1793165100,440,1,99],[1793187600,59,0,0],[1793209860,431,1,96],[1793232000,80,0,0],[1793254140,430,1,93],[1793276700,72,0,0],[1793299080,410,1,88],[1793321100,99,0,0],[1793343360,416,1,82],[1793366040,91,0,0],[1793388600,387,1,76],[1793410440,121,0,0],[1793433060,399,1,69],[1793455800,112,0,0],[1793478660,365,1,62],[1793500260,141,0,0],[1793523360,384,1,56],[1793545980,130,0,0],[1793569140,352,1,51],[1793590620,153,0,0],[1793613960,378,1,47],[1793636580,137,0,0],[1793659740,350,1,47],[1793681280,153,0,0],[1793704560,382,1,48],[1793727180,132,0,0],[1793750100,360,1,52],[1793771880,141,0,0],[1793794800,393,1,56],[1793817480,118,0,0],[1793840100,377,1,61],[1793862000,121,0,0],[1793884680,406,1,66],[1793907180,101,0,0],[1793929620,395,1,71],[1793951640,101,0,0],[1793974080,416,1,75],[1793996520,88,0,0],[1794018780,409,1,78],[1794040860,86,0,0],[1794063240,422,1,81],[1794085500,80,0,0],[1794107700,419,1,83],[1794129900,78,0,0],[1794152100,421,1,84],[1794174300,78,0,0],[1794196440,423,1,84],[1794218700,76,0,0],[1794240840,416,1,84],[1794262980,83,0,0]];
+const KEYA="mareeMessenger.api";
+let apiCache=[];try{apiCache=JSON.parse(localStorage.getItem(KEYA)||"[]")||[];}catch(e){apiCache=[];}
+function mergeEv(base,newer){const keep=base.filter(e=>!newer.some(n=>n[2]===e[2]&&Math.abs(n[0]-e[0])<3*3600));return [...keep,...newer].sort((a,b)=>a[0]-b[0]);}
+const SRC={shom:[],api:mergeEv(SEED_API,apiCache)};
+const mapEv=r=>r.map(e=>({t:e[0]*1000,h:e[1]/100,hi:e[2]===1,c:e[3]}));
+let EV=[];
+const MIN=60000,HOUR=3600000;
+const DEFAULTS={boat:{name:"Messenger",teB:1.60,teR:1.00,trajet:20,pied:0,S:1.90},crew:{me:"",mgrName:"",mgrTel:"",mgrMail:""},
+  model:{dtUp:10,dtDown:10,a:1,b:0,pDefault:1013,unc:15,minLen:30,calibrated:false,src:"api",apiKey:""}};
+const KEY="mareeMessenger.v1";
+let cfg=JSON.parse(JSON.stringify(DEFAULTS));
+try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s){Object.assign(cfg.boat,s.boat||{});Object.assign(cfg.model,s.model||{});Object.assign(cfg.crew,s.crew||{});}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(cfg));}catch(e){}}
+let pressure=null;
+function loadSrc(){const r=SRC[cfg.model.src];EV=mapEv(r&&r.length>3?r:SRC.api);const iso=t=>fmtISO.format(new Date(t));
+  if(typeof document!=="undefined"&&document.getElementById("date")){document.getElementById("date").min=iso(EV[0].t);document.getElementById("date").max=iso(EV[EV.length-1].t-HOUR);}}
+
+/* temps */
+function lastSunday(y,m){const d=new Date(Date.UTC(y,m,0));d.setUTCDate(d.getUTCDate()-d.getUTCDay());return d;}
+function isCEST(ms){const y=new Date(ms).getUTCFullYear();return ms>=lastSunday(y,3).getTime()+HOUR&&ms<lastSunday(y,10).getTime()+HOUR;}
+function utcFromLocal(y,m,d,h,mi){const g=Date.UTC(y,m-1,d,h||0,mi||0);return isCEST(g-2*HOUR)?g-2*HOUR:g-HOUR;}
+const fmtT=new Intl.DateTimeFormat("fr-FR",{timeZone:"Europe/Paris",hour:"numeric",minute:"2-digit"});
+const fmtD=new Intl.DateTimeFormat("fr-FR",{timeZone:"Europe/Paris",weekday:"long",day:"numeric",month:"long"});
+const fmtISO=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Paris",year:"numeric",month:"2-digit",day:"2-digit"});
+loadSrc();
+function hm(ms){return fmtT.format(new Date(ms)).replace(":","h");}
+function round5(ms){return Math.round(ms/(5*MIN))*5*MIN;}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+
+/* soleil à La Teste */
+function sunTimesUTC(y,m,d,lat,lon){const R=Math.PI/180;
+  const JD=Date.UTC(y,m-1,d,12)/86400000+2440587.5,n=Math.round(JD-2451545.0),Js=n-lon/360;
+  const M=((357.5291+0.98560028*Js)%360+360)%360;
+  const C=1.9148*Math.sin(M*R)+0.02*Math.sin(2*M*R)+0.0003*Math.sin(3*M*R);
+  const lam=((M+C+180+102.9372)%360+360)%360;
+  const Jt=2451545.0+Js+0.0053*Math.sin(M*R)-0.0069*Math.sin(2*lam*R);
+  const sd=Math.sin(lam*R)*Math.sin(23.4397*R),cd=Math.cos(Math.asin(sd));
+  const cw=(Math.sin(-0.833*R)-Math.sin(lat*R)*sd)/(Math.cos(lat*R)*cd);
+  const w=Math.acos(Math.max(-1,Math.min(1,cw)))/R,toMs=J=>(J-2440587.5)*86400000;
+  return {rise:toMs(Jt-w/360),set:toMs(Jt+w/360)};}
+const sunCache={};
+function sunFor(ms){const k=fmtISO.format(new Date(ms));if(!sunCache[k]){const[y,mo,d]=k.split("-").map(Number);sunCache[k]=sunTimesUTC(y,mo,d,44.64,-1.14);}return sunCache[k];}
+function isNight(ms){const s=sunFor(ms);return ms<s.rise||ms>s.set;}
+
+/* modèle */
+function segIndex(t){let lo=0,hi=EV.length-1;if(t<EV[0].t||t>=EV[hi].t)return -1;while(hi-lo>1){const mid=(lo+hi)>>1;if(EV[mid].t<=t)lo=mid;else hi=mid;}return lo;}
+function eyrac(t){const i=segIndex(t);if(i<0)return null;const a=EV[i],b=EV[i+1],f=(t-a.t)/(b.t-a.t);
+  return {h:(a.h+b.h)/2+(a.h-b.h)/2*Math.cos(Math.PI*f),rising:b.h>a.h};}
+function hPlace(t){const m=cfg.model;let e=eyrac(t-m.dtUp*MIN);if(!e)return null;
+  if(!e.rising){e=eyrac(t-m.dtDown*MIN);if(!e)return null;}return m.a*e.h+m.b+0.01*(1013-pressureAt(t));}
+function depth(t){const h=hPlace(t);return h===null?null:h-cfg.boat.S+cfg.boat.teR;}
+function levels(){const b=cfg.boat;return {norm:b.teB,sec:b.teR+b.pied,pose:b.teR};}
+function sample(a,b){const out=[];for(let t=a;t<=b;t+=MIN)out.push([t,depth(t)]);return out;}
+function crossings(s,L){const r=[];for(let k=1;k<s.length;k++){const[t0,d0]=s[k-1],[t1,d1]=s[k];
+  if(d0===null||d1===null)continue;if((d0<L)!==(d1<L)){const f=(L-d0)/(d1-d0);r.push({t:t0+f*(t1-t0),up:d1>d0});}}return r;}
+function intervals(cr){const out=[];let open=null;for(const c of cr){if(c.up)open=c.t;else{out.push({u:open,d:c.t});open=null;}}if(open!==null)out.push({u:open,d:null});return out;}
+function badZones(a,b){const z=[],L=levels();for(const e of EV){if(e.hi||e.t<a-6*HOUR||e.t>b+6*HOUR)continue;
+  const tl=e.t+cfg.model.dtDown*MIN,d=depth(tl);if(d!==null&&d>=L.pose)z.push([tl-90*MIN,tl+90*MIN]);}return z;}
+
+/* rendu */
+const $=id=>document.getElementById(id);
+const NS="http://www.w3.org/2000/svg";
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+function h(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;}
+let cur=null;
+function setDay(p){cur=p;$("date").value=`${p.y}-${String(p.m).padStart(2,"0")}-${String(p.d).padStart(2,"0")}`;render();}
+function fromISO(s){const[a,b,c]=s.split("-").map(Number);return{y:a,m:b,d:c};}
+function shift(n){const t=new Date(Date.UTC(cur.y,cur.m-1,cur.d+n));setDay({y:t.getUTCFullYear(),m:t.getUTCMonth()+1,d:t.getUTCDate()});}
+function today(){return fromISO(fmtISO.format(new Date()));}
+
+function render(){
+  const b=cfg.boat,m=cfg.model,L=levels(),TR=b.trajet*MIN,MINLEN=Math.max(0,m.minLen)*MIN;
+  const start=utcFromLocal(cur.y,cur.m,cur.d,0,0);
+  const nx=new Date(Date.UTC(cur.y,cur.m-1,cur.d+1));
+  const end=utcFromLocal(nx.getUTCFullYear(),nx.getUTCMonth()+1,nx.getUTCDate(),0,0);
+  const now=Date.now(),isToday=now>=start&&now<end;
+  $("dayname").textContent=cap(fmtD.format(new Date(start+12*HOUR)));
+  const dayEv=EV.filter(e=>e.t>=start&&e.t<end);
+  const coefs=dayEv.filter(e=>e.hi).map(e=>e.c);
+  $("coef").textContent=coefs.length?"Coef. "+coefs.join("/"):"Pas de données";
+  {const pi=$("pressure");if(document.activeElement!==pi)pi.value=pressure==null?"":pressure;pi.placeholder=String(Math.round(pressureAt(start+12*HOUR)));
+   $("pmode").textContent=pressure!=null?"saisie":(meteoCovers(start+12*HOUR)?"prévue":"par défaut");}
+  const su=sunFor(start+12*HOUR);$("sun").textContent=`soleil ${hm(su.rise)} – ${hm(su.set)}`;
+
+  const s=sample(start-14*HOUR,end+14*HOUR);
+  const hasData=s.some(x=>x[1]!==null&&x[0]>=start&&x[0]<end);
+  const bad=badZones(start,end),inBad=t=>bad.some(z=>t>=z[0]&&t<=z[1]);
+  const crN=crossings(s,L.norm),crS=crossings(s,L.sec),crP=crossings(s,L.pose);
+  const ivN=intervals(crN),ivS=intervals(crS);
+  const nights=[];for(const k of [-1,0,1]){const x=sunFor(start+12*HOUR+k*24*HOUR);nights.push(x.rise,x.set);}
+  const nightR=[[start-48*HOUR,nights[0]],[nights[1],nights[2]],[nights[3],nights[4]],[nights[5],end+48*HOUR]];
+
+  /* courbe + frise */
+  const W=360,CT=20,CB=70,FT=78,FB=98,H=114,maxD=4.2;
+  const x=t=>(t-start)/(end-start)*W, y=d=>CB-Math.min(d,maxD)/maxD*(CB-CT);
+  const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"Hauteur d'eau à la place et frise de la journée"});
+  for(const [na,nb] of nightR){const a=Math.max(start,na),bb=Math.min(end,nb);if(bb>a)el("rect",{x:x(a),y:CT-4,width:x(bb)-x(a),height:CB-CT+4,fill:"var(--night)",opacity:.07},svg);}
+  if(hasData){
+    let pts=[];for(let t=start;t<=end;t+=5*MIN){const d=depth(t);if(d!==null)pts.push([x(t),y(Math.max(d,L.pose))]);}
+    const ps=pts.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ");
+    if(pts.length){el("polygon",{points:`${pts[0][0].toFixed(1)},${CB} ${ps} ${pts[pts.length-1][0].toFixed(1)},${CB}`,fill:"var(--accent-soft)"},svg);
+      el("polyline",{points:ps,fill:"none",stroke:"var(--accent)","stroke-width":2.2,"stroke-linejoin":"round"},svg);}
+  }
+  const cat=t=>{const d=depth(t);if(d===null||inBad(t))return"na";if(d>=L.norm)return"ok";if(d>=L.sec)return"warn";return"ground";};
+  const col={ok:"var(--ok)",warn:"var(--warn)",ground:"var(--ground)",na:"var(--line)"};
+  let rs=start,rc=cat(start);
+  for(let t=start+MIN;t<=end;t+=MIN){const c=t===end?null:cat(t);if(c!==rc){el("rect",{x:x(rs),y:FT,width:x(t)-x(rs)+0.3,height:FB-FT,fill:col[rc]},svg);rs=t;rc=c;}}
+  for(const [na,nb] of nightR){const a=Math.max(start,na),bb=Math.min(end,nb);if(bb>a)el("rect",{x:x(a),y:FT,width:x(bb)-x(a),height:FB-FT,fill:"var(--night)",opacity:.35},svg);}
+  for(const e of EV){const tl=e.t+(e.hi?m.dtUp:m.dtDown)*MIN;if(tl<start||tl>=end)continue;const X=x(tl);
+    const t=el("text",{x:X,y:12,"text-anchor":X<30?"start":X>W-30?"end":"middle","font-size":11,"font-weight":700,fill:"var(--ink)"},svg);t.textContent=(e.hi?"PM ":"BM ")+hm(tl);}
+  for(let k=0;k<=24;k+=6){const t=start+k*HOUR,X=x(Math.min(t,end));
+    const tx=el("text",{x:X,y:H-3,"text-anchor":k===0?"start":k===24?"end":"middle","font-size":11,fill:"var(--muted)"},svg);tx.textContent=k+"h";}
+  if(isToday)el("line",{x1:x(now),x2:x(now),y1:CT-4,y2:FB+3,stroke:"var(--ink)","stroke-width":2},svg);
+  $("chart").replaceChildren(svg);
+
+  /* maintenant */
+  const np=$("now");np.hidden=!(isToday&&hasData);
+  if(isToday&&hasData){const d=depth(now),nxt=(list,up)=>list.find(c=>c.t>now&&c.up===up);np.replaceChildren();
+    let a,bTxt;
+    if(d<L.pose){const c=nxt(crP,true);a="Maintenant : posé";bTxt=c?`décolle vers ${hm(round5(c.t))}`:"";}
+    else if(d<L.norm){const rising=depth(now+10*MIN)>d;
+      if(rising){const c=nxt(crN,true);a="Maintenant : dérive relevée seulement";bTxt=c?`dérive basse dès ${hm(round5(c.t))}`:"";}
+      else{const c=nxt(crP,false);a="Maintenant : dérive relevée seulement";bTxt=c?`posé vers ${hm(round5(c.t))}`:"";}}
+    else{const c=nxt(crN,false);a="Maintenant : dérive basse possible";bTxt=c?`K1 avant ${hm(round5(c.t-TR))}`:"";}
+    np.append(h("b","",a));if(bTxt)np.append(" · "+bTxt);}
+
+  /* options de sortie, de jour uniquement */
+  const T=t=>t==null?"–":hm(round5(t));
+  const dur=ms=>{const mm=Math.max(0,Math.round(ms/MIN/5)*5);return `${Math.floor(mm/60)} h ${String(mm%60).padStart(2,"0")}`;};
+  const encl=(t,list)=>list.find(v=>(v.u===null||v.u<=t+MIN)&&(v.d===null||v.d>=t-MIN))||{};
+  const inDay=t=>t!==null&&t>=start&&t<end;
+  const daylight=(a,bb,finJour)=>{const out=[];for(let k=-1;k<=2;k++){const z=sunFor(start+12*HOUR+k*24*HOUR);
+    const x0=Math.max(a,z.rise),x1=Math.min(bb,z.set-(finJour||0));if(x1-x0>0)out.push([x0,x1]);}return out;};
+  const sameDay=(p,q)=>fmtISO.format(new Date(p))===fmtISO.format(new Date(q));
+  const ivNf=ivN.filter(v=>v.u!==null&&v.d!==null);
+  const courtes=[],longues=[];
+  if(hasData)for(let k=0;k<ivNf.length;k++){const v=ivNf[k];
+    const pm=EV.find(e=>e.hi&&e.t+m.dtUp*MIN>=v.u&&e.t+m.dtUp*MIN<=v.d);
+    if(pm&&inDay(pm.t+m.dtUp*MIN)){const kRet=v.d-TR,parts=daylight(v.u,kRet,TR).filter(p=>p[1]-p[0]>=MINLEN);
+      if(parts.length){const p=parts.reduce((a,c)=>c[1]-c[0]>a[1]-a[0]?c:a),s2=encl(pm.t+m.dtUp*MIN,ivS);
+        const notes=[];if(p[0]>v.u+MIN)notes.push("dès le lever");if(p[1]<kRet-MIN)notes.push("avant le coucher");
+        courtes.push({a:p[0],z:p[1],ld:p[1]-MINLEN,pm:pm.t+m.dtUp*MIN,notes,sec:s2.d==null?null:s2.d-TR});}}
+    const w=ivNf[k+1];if(!w)continue;
+    const bm=EV.find(e=>!e.hi&&e.t+m.dtDown*MIN>=v.d&&e.t+m.dtDown*MIN<=w.u);
+    if(!bm||!inDay(bm.t+m.dtDown*MIN))continue;
+    const dep=daylight(v.u,v.d,0).filter(p=>p[1]-p[0]>=MINLEN),ret=daylight(w.u-TR,w.d-TR,TR).filter(p=>p[1]-p[0]>=MINLEN);
+    let d0=null,r0=null;for(const dp of dep){const rp=ret.find(p=>p[0]>dp[1]&&sameDay(p[0],dp[1]));if(rp){d0=dp;r0=rp;}}
+    if(!d0)continue;const sA=encl(v.d,ivS),sB=encl(w.u,ivS);
+    longues.push({a:d0[0],z:r0[1],ld:d0[1],bm:bm.t+m.dtDown*MIN,d0,r0,secA:sA.d??null,secB:sB.u==null?null:sB.u-TR,
+      bad:bad.some(z=>bm.t+m.dtDown*MIN>=z[0]&&bm.t+m.dtDown*MIN<=z[1])});}
+  const nextOpt=isToday?[...courtes,...longues].filter(o=>o.ld>now).sort((p,q)=>Math.max(p.a,now)-Math.max(q.a,now)||p.a-q.a)[0]:null;
+
+  const bc=$("courtes");bc.replaceChildren();
+  for(const o of courtes){const c=h("div","card short"+(o===nextOpt?" next":""));
+    const l=h("div");l.append(h("div","big",`${T(o.a)} → K1 ${T(o.z)}`));
+    l.append(h("div","sub",[`PM ${hm(o.pm)}`,dur(o.z-o.a),...o.notes,...(o===nextOpt?["prochaine"]:[])].join(" · ")));
+    const r=h("div","sec");r.append("secours",document.createElement("br"),`K1 ${T(o.sec)}`);
+    c.append(l,r);bc.append(c);}
+  if(!courtes.length)bc.append(h("p","empty",hasData?"Aucune sortie courte de jour.":"Pas de prédictions pour cette date."));
+
+  const bl=$("longues");bl.replaceChildren();
+  for(const o of longues){const c=h("div","card long"+(o===nextOpt?" next":""));
+    const top=h("div","top");top.append(h("span","big",`BM ${hm(o.bm)}`),h("span","sub",`${dur(o.r0[0]-o.d0[1])} au large au minimum`));
+    const tiles=h("div","tiles");
+    const tile=(lab,val,sec)=>{const t=h("div","tile");t.append(h("div","sub",lab),h("div","v",val),h("div","sub",sec));return t;};
+    tiles.append(tile("Quitter la place",`${T(o.d0[0])} → ${T(o.d0[1])}`,`secours avant ${T(o.secA)}`),
+      tile("Repasser K1",`${T(o.r0[0])} → ${T(o.r0[1])}`,`secours dès ${T(o.secB)}`));
+    c.append(top,tiles);
+    if(o.bad)c.append(h("div","sub","Basse mer haute (morte-eau) : le port assèche quand même ; heures d'échouage peu fiables."));
+    bl.append(c);}
+  if(!longues.length)bl.append(h("p","empty",hasData?"Aucune sortie longue de jour.":""));
+
+  renderMeteo(start,end);
+  $("foot").textContent=hasData?(m.calibrated?"Heures arrondies à 5 min.":`Modèle non calibré : ±${m.unc} min. Sorties de jour, retour compté depuis K1 (${b.trajet} min jusqu'à la place).`):(cfg.model.src==="api"?"Pas de marées pour cette date : vérifiez la clé api-maree dans Réglages (30 prochains jours).":"Pas de données SHOM pour cette date : importez le mois dans l'onglet Calibrage.");
+}
+
+/* réglages */
+function getK(k){const[a,b]=k.split(".");return cfg[a][b];}
+function setK(k,v){const[a,b]=k.split(".");cfg[a][b]=v;}
+function fill(){document.querySelectorAll("[data-k]").forEach(e=>{const v=getK(e.dataset.k);if(e.type==="checkbox")e.checked=!!v;else e.value=v;});}
+document.querySelectorAll("[data-k]").forEach(e=>e.addEventListener("input",()=>{
+  let v;if(e.type==="checkbox")v=e.checked;else if(e.type==="number"){v=parseFloat(e.value);if(!isFinite(v))return;}else v=e.value;
+  setK(e.dataset.k,v);if(e.dataset.k==="model.src"){loadSrc();const ft=utcFromLocal(cur.y,cur.m,cur.d,12,0);if(ft<EV[0].t||ft>EV[EV.length-1].t){const[a,b,c]=fmtISO.format(new Date(Math.min(Math.max(Date.now(),EV[0].t+24*HOUR),EV[EV.length-1].t-24*HOUR))).split("-").map(Number);cur={y:a,m:b,d:c};$("date").value=`${a}-${String(b).padStart(2,"0")}-${String(c).padStart(2,"0")}`;}}save();render();}));
+$("reset").addEventListener("click",()=>{const keep=cfg.crew;cfg=JSON.parse(JSON.stringify(DEFAULTS));cfg.crew=keep;pressure=null;save();fill();render();$("resetmsg").textContent="Valeurs de départ rétablies.";});
+document.querySelectorAll("nav.tabs button").forEach(btn=>btn.addEventListener("click",()=>{
+  document.querySelectorAll("nav.tabs button").forEach(o=>o.setAttribute("aria-selected",o===btn?"true":"false"));
+  ["maree","bateau","reglages","gestion"].forEach(n=>$("p-"+n).hidden=n!==btn.dataset.tab);window.scrollTo(0,0);}));
+$("pressure").addEventListener("input",e=>{const s=e.target.value.trim();if(s===""){pressure=null;render();return;}const v=parseFloat(s);if(isFinite(v)&&v>900&&v<1100){pressure=v;render();}});
+$("date").addEventListener("change",e=>{if(e.target.value)setDay(fromISO(e.target.value));});
+$("prev").addEventListener("click",()=>shift(-1));
+$("next").addEventListener("click",()=>shift(1));
+/* ---------- observations et échanges par message ---------- */
+const KEYO="mareeMessenger.obs";
+let obsList=[];
+try{obsList=JSON.parse(localStorage.getItem(KEYO)||"[]")||[];}catch(e){obsList=[];}
+function saveObs(){try{localStorage.setItem(KEYO,JSON.stringify(obsList));}catch(e){}}
+const fmtHM=new Intl.DateTimeFormat("fr-FR",{timeZone:"Europe/Paris",hour:"2-digit",minute:"2-digit",hour12:false});
+const fmtDM=new Intl.DateTimeFormat("fr-FR",{timeZone:"Europe/Paris",day:"numeric",month:"short"});
+const TYPES={decolle:"Vient de décoller",pose:"Vient de se poser",flotte:"Flotte",echoue:"Est posé",derive:"Dérive a touché",passe:"Passé sans toucher"};
+function obsId(o){return `${o.t}-${o.type}-${o.who}`;}
+function obsMsg(o){return `MM1 OBS ${fmtISO.format(new Date(o.t))} ${fmtHM.format(new Date(o.t))} ${o.type} ${o.lieu} ${Math.round(o.p)} ${o.who||"?"}`;}
+function addObs(o){o.id=obsId(o);if(obsList.some(x=>x.id===o.id))return false;obsList.push(o);obsList.sort((a,b)=>a.t-b.t);saveObs();return true;}
+function parseObs(text){const out=[];const re=/MM1 OBS (\d{4})-(\d{2})-(\d{2}) (\d{1,2}):(\d{2}) (decolle|pose|flotte|echoue|derive|passe) (place|port|chenal) (\d{3,4}) (\S+)/g;let m;
+  while((m=re.exec(text))){out.push({t:utcFromLocal(+m[1],+m[2],+m[3],+m[4],+m[5]),type:m[6],lieu:m[7],p:+m[8],who:m[9]});}return out;}
+
+/* panneau de saisie */
+let pending=null;
+function toLocalParts(ms){const[y,mo,d]=fmtISO.format(new Date(ms)).split("-").map(Number);const[hh,mm]=fmtHM.format(new Date(ms)).split(":").map(Number);return{y,mo,d,hh,mm};}
+function updatePanel(){if(!pending)return;
+  const v=$("obsTime").value,dv=$("obsDate").value;if(v||dv){const p=toLocalParts(pending.t);let y=p.y,mo=p.mo,d=p.d,hh=p.hh,mm=p.mm;
+    if(dv){[y,mo,d]=dv.split("-").map(Number);}if(v){[hh,mm]=v.split(":").map(Number);}pending.t=utcFromLocal(y,mo,d,hh,mm);}
+  pending.lieu=(pending.type==="derive"||pending.type==="passe")?$("obsLieu").value:"place";
+  pending.p=Math.round(pressureAt(pending.t));pending.who=(cfg.crew.me||"?").replace(/\s+/g,"-");
+  const msg=obsMsg(pending);$("obsMsg").textContent=msg;
+  const tel=(cfg.crew.mgrTel||"").replace(/[^\d+]/g,""),mail=(cfg.crew.mgrMail||"").trim();
+  $("obsSms").href=`sms:${tel}?&body=${encodeURIComponent(msg)}`;
+  $("obsMail").href=`mailto:${encodeURIComponent(mail)}?subject=${encodeURIComponent("Marée Messenger – observation")}&body=${encodeURIComponent(msg)}`;
+  $("obsNote").textContent=cfg.crew.mgrName?`À envoyer à ${cfg.crew.mgrName}. L'observation est aussi gardée sur ce téléphone.`:"Renseignez le gestionnaire dans l'onglet Bateau. L'observation est aussi gardée sur ce téléphone.";}
+document.querySelectorAll(".obsbtn").forEach(btn=>btn.addEventListener("click",()=>{
+  document.querySelectorAll(".obsbtn").forEach(o=>o.setAttribute("aria-pressed",o===btn?"true":"false"));
+  const t=Date.now();pending={t,type:btn.dataset.obs,lieu:"place",p:Math.round(pressureAt(Date.now())),who:""};
+  $("obsTime").value=fmtHM.format(new Date(t));$("obsDate").value=fmtISO.format(new Date(t));$("obsDate").max=fmtISO.format(new Date(t));$("obsLabel").textContent=TYPES[pending.type];
+  $("obsLieuRow").hidden=!(pending.type==="derive"||pending.type==="passe");
+  $("obsPanel").hidden=false;updatePanel();}));
+["obsTime","obsDate","obsLieu"].forEach(id=>$(id).addEventListener("input",updatePanel));
+function commitPending(){if(!pending)return;updatePanel();addObs({...pending});renderGestion();}
+$("obsSms").addEventListener("click",commitPending);
+$("obsMail").addEventListener("click",commitPending);
+$("obsCopy").addEventListener("click",()=>{commitPending();const msg=$("obsMsg").textContent;
+  const ok=()=>{$("obsNote").textContent="Message copié : collez-le dans votre messagerie.";};
+  try{navigator.clipboard.writeText(msg).then(ok,()=>{selectText($("obsMsg"));$("obsNote").textContent="Sélectionné : copiez-le avec le menu du téléphone.";});}
+  catch(e){selectText($("obsMsg"));}});
+function selectText(node){try{const r=document.createRange();r.selectNodeContents(node);const s=window.getSelection();s.removeAllRanges();s.addRange(r);}catch(e){}}
+
+/* mise à jour reçue (pour tous) */
+const PKEYS={S:"boat.S",dtUp:"model.dtUp",dtDown:"model.dtDown",TEb:"boat.teB",TEr:"boat.teR",trajet:"boat.trajet",a:"model.a",b:"model.b"};
+function paramMsg(){const b=cfg.boat,m=cfg.model;return `MM1 PARAM S=${b.S.toFixed(2)} dtUp=${Math.round(m.dtUp)} dtDown=${Math.round(m.dtDown)} TEb=${b.teB.toFixed(2)} TEr=${b.teR.toFixed(2)} trajet=${Math.round(b.trajet)} cal=${m.calibrated?1:0}${m.apiKey?" key="+m.apiKey:""} du=${fmtISO.format(new Date())}`;}
+$("paramApply").addEventListener("click",()=>{const txt=$("paramIn").value;const mm=txt.match(/MM1 PARAM ([^\n]+)/);
+  if(!mm){$("paramMsg").textContent="Message non reconnu : il doit commencer par MM1 PARAM.";return;}
+  const done=[];for(const kv of mm[1].trim().split(/\s+/)){const[k,v]=kv.split("=");
+    if(k==="cal"){cfg.model.calibrated=v==="1";done.push("calibré");continue;}
+    if(k==="key"&&/^[A-Za-z0-9]{16,64}$/.test(v||"")){cfg.model.apiKey=v;done.push("clé api-maree");continue;}
+    if(PKEYS[k]){const n=parseFloat(v);if(isFinite(n)){setK(PKEYS[k],n);done.push(`${k} ${v}`);}}}
+  save();fill();render();$("paramMsg").textContent=done.length?"Mise à jour appliquée : "+done.join(", ")+".":"Aucun paramètre reconnu.";});
+
+/* gestion : calibrage */
+function hAt(t,dtU,dtD,P){const m=cfg.model;let e=eyrac(t-dtU*MIN);if(!e)return null;if(!e.rising){e=eyrac(t-dtD*MIN);if(!e)return null;}return m.a*e.h+m.b+0.01*(1013-P);}
+function predCross(o,dtU,dtD,S){const lvl=S;let prev=null,best=null;
+  for(let t=o.t-4*HOUR;t<=o.t+4*HOUR;t+=MIN){const v=hAt(t,dtU,dtD,o.p);if(v===null){prev=null;continue;}
+    if(prev!==null&&(prev[1]<lvl)!==(v<lvl)){const up=v>prev[1];if(up===(o.type==="decolle")){const tc=prev[0]+(lvl-prev[1])/(v-prev[1])*MIN;if(best===null||Math.abs(tc-o.t)<Math.abs(best-o.t))best=tc;}}
+    prev=[t,v];}return best;}
+function median(a){const s=[...a].sort((x,y)=>x-y),n=s.length;return n?(n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2):null;}
+function calibrate(){const m=cfg.model,b=cfg.boat;
+  const base=obsList.filter(o=>o.type==="decolle"||o.type==="pose").slice(-10);
+  const pairs=[];for(const d of base.filter(o=>o.type==="decolle")){const p=base.find(o=>o.type==="pose"&&o.t>d.t&&o.t-d.t<11*HOUR);
+    if(p){const pd=predCross(d,m.dtUp,m.dtDown,b.S),pp=predCross(p,m.dtUp,m.dtDown,b.S);if(pd&&pp)pairs.push(((d.t-pd)+(p.t-pp))/2/MIN);}}
+  const shift=pairs.length?Math.round(median(pairs)):0;
+  const dtU=m.dtUp+shift,dtD=m.dtDown+shift;
+  const Ss=base.map(o=>hAt(o.t,dtU,dtD,o.p)).filter(v=>v!==null);
+  const Snew=Ss.length?median(Ss):null;const conc=Snew===null?0:Ss.filter(v=>Math.abs(v-Snew)<=0.10).length;
+  return {n:base.length,pairs:pairs.length,shift,dtU,dtD,S:Snew,conc,ready:base.length>=3&&conc>=3};}
+function renderGestion(){
+  const c=$("carnet");c.replaceChildren();const m=cfg.model,b=cfg.boat;
+  if(!obsList.length)c.append(h("p","sub","Aucune observation pour l'instant. Elles apparaissent ici quand vous en notez ou en recevez."));
+  for(const o of [...obsList].reverse()){const row=h("div","crow");
+    const l=h("div");l.append(h("div","",`${TYPES[o.type]}${o.lieu!=="place"?" ("+o.lieu+")":""}`),h("div","sub",`${fmtDM.format(new Date(o.t))} ${hm(o.t)} · ${o.who} · ${o.p} hPa`));
+    let ec="";if(o.type==="decolle"||o.type==="pose"){const pc=predCross(o,m.dtUp,m.dtDown,b.S);if(pc){const e=Math.round((o.t-pc)/MIN);ec=(e>0?"+":"")+e+" min";}}
+    else if(o.type==="flotte"||o.type==="echoue"){const v=hAt(o.t,m.dtUp,m.dtDown,o.p);
+      if(v!==null){const floats=v-b.S>=0;const ok=floats===(o.type==="flotte");ec=ok?"✓ cohérent":(floats?"✗ modèle : à flot":"✗ modèle : posé");}}
+    else if(o.type==="derive"&&o.lieu==="place"){const d=depth(o.t);if(d!==null)ec="≈ "+d.toFixed(2).replace(".",",")+" m";}
+    const del=h("button","del","×");del.setAttribute("aria-label","Retirer cette observation");
+    del.addEventListener("click",()=>{obsList=obsList.filter(x=>x.id!==o.id);saveObs();renderGestion();});
+    row.append(l,h("span","ec",ec),del);c.append(row);}
+  const k=$("calib");k.replaceChildren();const r=calibrate();
+  const contra=obsList.filter(o=>(o.type==="flotte"||o.type==="echoue")).filter(o=>{const v=hAt(o.t,m.dtUp,m.dtDown,o.p);return v!==null&&((v-b.S>=0)!==(o.type==="flotte"));});
+  if(contra.length){const w=h("p","sub",`${contra.length} constat(s) en contradiction avec le modèle actuel : voir le carnet.`);w.style.color="var(--warn)";w.style.fontWeight="700";k.append(w);}
+  if(r.n<3){k.append(h("p","sub",`Il faut au moins trois observations « vient de décoller » ou « vient de se poser » pour proposer un calibrage (${r.n} pour l'instant).`));return;}
+  const prop=h("div","prop");
+  prop.append(h("span","","Décalage Eyrac → La Teste"),h("b","",`${m.dtUp} → ${r.dtU} min`),
+    h("span","","Hauteur Eyrac au décollage"),h("b","",`${b.S.toFixed(2)} → ${r.S.toFixed(2)} m`.replace(/\./g,",")));
+  k.append(prop,h("p","sub",`D'après ${r.n} observations, dont ${r.conc} concordantes et ${r.pairs} paire(s) décollage-pose.`+(r.ready?"":" Pas encore assez concordant pour conclure.")));
+  const act=h("div","actions");const ap=h("button","btn","Appliquer à mon application");ap.type="button";ap.disabled=!r.ready;
+  ap.addEventListener("click",()=>{cfg.model.dtUp=r.dtU;cfg.model.dtDown=r.dtD;cfg.boat.S=Math.round(r.S*100)/100;cfg.model.calibrated=true;save();fill();render();renderGestion();});
+  act.append(ap);k.append(act);
+  k.append(h("h3","sub","Message à diffuser à l'équipage (paramètres actuels de cette application) :"));
+  const pre=h("pre","msg",paramMsg());k.append(pre);
+  const a2=h("div","actions");const sms=h("a","btn","SMS");sms.href=`sms:?&body=${encodeURIComponent(paramMsg())}`;
+  const mail=h("a","btn","E-mail");mail.href=`mailto:?subject=${encodeURIComponent("Marée Messenger – mise à jour")}&body=${encodeURIComponent(paramMsg())}`;
+  const cp=h("button","btn ghost","Copier");cp.type="button";cp.addEventListener("click",()=>{try{navigator.clipboard.writeText(pre.textContent).then(()=>{cp.textContent="Copié";},()=>selectText(pre));}catch(e){selectText(pre);}});
+  a2.append(sms,mail,cp);k.append(a2);}
+$("carnetCopy").addEventListener("click",()=>{const txt=obsList.map(obsMsg).join("\n");
+  if(!txt){$("carnetMsg").textContent="Le carnet est vide.";return;}
+  const dump=$("carnetDump");dump.textContent=txt;
+  const fallback=()=>{dump.hidden=false;selectText(dump);$("carnetMsg").textContent=`${obsList.length} observation(s) sélectionnée(s) : copiez-les avec le menu du téléphone.`;};
+  try{navigator.clipboard.writeText(txt).then(()=>{dump.hidden=true;$("carnetMsg").textContent=`${obsList.length} observation(s) copiée(s). Collez-les dans une note ou un e-mail.`;},fallback);}catch(e){fallback();}});
+$("obsImport").addEventListener("click",()=>{const list=parseObs($("obsIn").value);let added=0;for(const o of list)if(addObs(o))added++;
+  $("obsImportMsg").textContent=list.length?`${added} observation(s) ajoutée(s)${list.length-added?", "+(list.length-added)+" déjà connue(s)":""}.`:"Aucun message MM1 OBS reconnu.";
+  if(added)$("obsIn").value="";renderGestion();});
+document.querySelectorAll("[data-k]").forEach(e=>e.addEventListener("input",()=>{if(pending)updatePanel();renderGestion();}));
+/* relevés utiles : décollages et poses prévus de jour */
+function releves(days){const L=levels(),now=Date.now(),out=[];
+  const s=sample(now,now+days*24*HOUR);
+  for(const c of crossings(s,L.pose)){const z=sunFor(c.t);if(c.t-30*MIN<z.rise||c.t+30*MIN>z.set)continue;
+    const pm=EV.find(e=>e.hi&&Math.abs(e.t+cfg.model.dtUp*MIN-c.t)<7*HOUR);out.push({t:c.t,up:c.up,c:pm?pm.c:null});}
+  return out;}
+function relRow(r,withDate){const row=h("div","crow");const l=h("div");
+  l.append(h("div","",`${r.up?"Décollage":"Pose"} vers ${hm(round5(r.t))}`),
+    h("div","sub",`${withDate?cap(fmtDM.format(new Date(r.t)))+" · ":""}sur place ${hm(round5(r.t-30*MIN))} – ${hm(round5(r.t+30*MIN))}${r.c?" · coef. "+r.c:""}`));
+  row.append(l,h("span","sub",withDate?"":cap(new Intl.DateTimeFormat("fr-FR",{timeZone:"Europe/Paris",weekday:"short"}).format(new Date(r.t)))),h("span",""));return row;}
+function renderReleves(){if(!$("relevesG"))return;const list=releves(7);
+  const g=$("relevesG");g.replaceChildren();
+  if(!list.length){g.append(h("p","sub","Aucun décollage ni pose prévu de jour dans les 7 prochains jours."));return;}
+  for(const r of list)g.append(relRow(r,true));}
+renderGestion();renderReleves();
+document.querySelectorAll("[data-k]").forEach(e=>e.addEventListener("input",renderReleves));
+$("pressure").addEventListener("input",renderReleves);
+setInterval(()=>{if(!document.hidden)renderReleves();},15*60000);
+
+/* import d'un annuaire SHOM, mois par mois */
+const KEYS="mareeMessenger.shom";
+let shomExtra={};try{shomExtra=JSON.parse(localStorage.getItem(KEYS)||"{}")||{};}catch(e){shomExtra={};}
+const SHOM_BASE=SRC.shom;
+function rebuildShom(){const all=[...SHOM_BASE];const seen=new Set(all.map(e=>e[0]));
+  for(const k of Object.keys(shomExtra))for(const e of shomExtra[k])if(!seen.has(e[0])){all.push(e);seen.add(e[0]);}
+  all.sort((a,b)=>a[0]-b[0]);SRC.shom=all;}
+function parseMonth(text,y,mo){const T="(\\d{1,2}:\\d{2}|--:--|---)",Hh="(\\d\\.\\d{2}|---)",C="(\\d{1,3}|---)";
+  const re=new RegExp(`^\\s*${T}\\s+${Hh}\\s+${C}\\s+${T}\\s+${Hh}\\s+${C}\\s+${T}\\s+${Hh}\\s+${T}\\s+${Hh}\\s*$`);
+  const rows=text.split(/\r?\n/).map(l=>l.replace(/,/g,".").match(re)).filter(Boolean);
+  const nd=new Date(Date.UTC(y,mo,0)).getUTCDate();
+  if(rows.length!==nd)return {err:`${rows.length} ligne(s) reconnue(s) pour ${nd} jours : vérifiez le mois et le texte collé.`};
+  const out=[];rows.forEach((m,i)=>{const day=i+1;
+    const put=(tt,hh,cc,hi)=>{if(!/^\d/.test(tt)||!/^\d/.test(hh))return;const[H,M]=tt.split(":").map(Number);
+      out.push([Math.round(utcFromLocal(y,mo,day,H,M)/1000),Math.round(parseFloat(hh)*100),hi?1:0,hi&&/^\d/.test(cc)?+cc:0]);};
+    put(m[1],m[2],m[3],true);put(m[4],m[5],m[6],true);put(m[7],m[8],"",false);put(m[9],m[10],"",false);});
+  out.sort((a,b)=>a[0]-b[0]);
+  for(let i=1;i<out.length;i++){const gap=(out[i][0]-out[i-1][0])/3600;if(out[i][2]===out[i-1][2]||gap<3||gap>9)return {err:`Incohérence vers le ${new Date(out[i][0]*1000).toLocaleDateString("fr-FR",{timeZone:"Europe/Paris"})} : vérifiez cette ligne.`};}
+  return {ev:out};}
+function renderImpList(){const l=$("impList");l.replaceChildren();const keys=Object.keys(shomExtra).sort();
+  if(!keys.length)return;l.append(h("p","sub","Mois importés :"));
+  for(const k of keys){const row=h("div","crow");const[y,m]=k.split("-").map(Number);
+    row.append(h("div","",new Intl.DateTimeFormat("fr-FR",{month:"long",year:"numeric",timeZone:"UTC"}).format(new Date(Date.UTC(y,m-1,15)))),h("span","sub",`${shomExtra[k].length} marées`));
+    const del=h("button","del","×");del.setAttribute("aria-label","Retirer ce mois");
+    del.addEventListener("click",()=>{delete shomExtra[k];try{localStorage.setItem(KEYS,JSON.stringify(shomExtra));}catch(e){}rebuildShom();loadSrc();render();renderImpList();});
+    row.append(del);l.append(row);}}
+$("impYear").value=new Date().getFullYear()+(new Date().getMonth()>=10?1:0);
+$("impGo").addEventListener("click",()=>{const y=parseInt($("impYear").value,10),mo=parseInt($("impMonth").value,10);
+  if(!(y>=2026&&y<=2035)){$("impMsg").textContent="Indiquez une année valide.";return;}
+  const r=parseMonth($("impText").value,y,mo);if(r.err){$("impMsg").textContent=r.err;return;}
+  shomExtra[`${y}-${String(mo).padStart(2,"0")}`]=r.ev;try{localStorage.setItem(KEYS,JSON.stringify(shomExtra));}catch(e){}
+  rebuildShom();loadSrc();render();renderImpList();$("impText").value="";
+  $("impMsg").textContent=`${r.ev.length} pleines et basses mers importées.`+(cfg.model.src!=="shom"?" Choisissez « Annuaire SHOM » dans Réglages pour les utiliser.":"");});
+rebuildShom();loadSrc();renderImpList();
+
+/* ---------- données en ligne : api-maree et Open-Meteo ---------- */
+function setTideStatus(err){const el=$("tideStatus");if(!el)return;let at=0;try{at=+localStorage.getItem(KEYA+".at")||0;}catch(e){}
+  const last=SRC.api.length?SRC.api[SRC.api.length-1][0]*1000:0;
+  const upto=last?` Données jusqu'au ${new Intl.DateTimeFormat("fr-FR",{timeZone:"Europe/Paris",day:"numeric",month:"long"}).format(new Date(last))}.`:"";
+  if(!(cfg.model.apiKey||"").trim()){el.textContent="Aucune clé api-maree : renseignez-la pour charger automatiquement les 30 prochains jours."+upto;return;}
+  if(err){el.textContent=`Mise à jour impossible (${err}).`+(at?` Dernière mise à jour : ${fmtDM.format(new Date(at))} à ${hm(at)}.`:"")+upto;return;}
+  el.textContent=at?`Marées mises à jour le ${fmtDM.format(new Date(at))} à ${hm(at)}.${upto}`:upto.trim();}
+function extractExtrema(json){const out=[];
+  const isT=v=>typeof v==="string"&&(/^\d{1,2}:\d{2}/.test(v)||/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(v));
+  function walk(n,date){if(Array.isArray(n)){n.forEach(x=>walk(x,date));return;}if(!n||typeof n!=="object")return;
+    for(const k in n){const v=n[k];if(typeof v==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&/date|day|jour/i.test(k))date=v;}
+    let time=null,height=null,type=null,coef=0;
+    for(const k in n){const v=n[k];
+      if(time===null&&isT(v)&&!/^(from|to)$/i.test(k))time=v;
+      if(typeof v==="number"&&/haut|height|level|value|^h$/i.test(k))height=v;
+      if(typeof v==="string"&&/^(PM|BM|HW|LW|high|low|pleine|basse|haute)/i.test(v))type=/^(PM|HW|high|pleine|haute)/i.test(v)?1:0;
+      if(typeof v==="number"&&/coef/i.test(k))coef=v;}
+    if(height===null)for(const k in n){const v=n[k];if(typeof v==="number"&&!Number.isInteger(v)&&v>-2&&v<8){height=v;break;}}
+    if(time!==null&&height!==null&&type!==null){let ms=null;
+      if(/\d{4}-\d{2}-\d{2}/.test(time)){const s=time.replace(" ","T");ms=Date.parse(/Z|[+-]\d{2}:?\d{2}$/.test(s)?s:s+"Z");}
+      else if(date){const[y,mo,d]=date.split("-").map(Number);const[H,M]=time.split(":").map(Number);ms=Date.UTC(y,mo-1,d,H,M);}
+      if(ms)out.push([Math.round(ms/1000),Math.round(height*100),type,type?coef:0]);}
+    for(const k in n){const v=n[k];if(v&&typeof v==="object")walk(v,date);}}
+  walk(json,null);out.sort((a,b)=>a[0]-b[0]);return out;}
+let tideBusy=false;
+async function fetchTides(force){const key=(cfg.model.apiKey||"").trim();if(!key||typeof fetch!=="function"||tideBusy){setTideStatus();return;}
+  let at=0;try{at=+localStorage.getItem(KEYA+".at")||0;}catch(e){}
+  if(!force&&Date.now()-at<6*HOUR){setTideStatus();return;}
+  tideBusy=true;const day=ms=>new Date(ms).toISOString().slice(0,10);
+  const url=`https://api-maree.fr/tide-extrema?site=arcachon-jetee-d-eyrac&from=${day(Date.now()-24*HOUR)}&to=${day(Date.now()+29*24*HOUR)}&tz=UTC&key=${encodeURIComponent(key)}`;
+  try{const r=await fetch(url);if(!r.ok)throw new Error(r.status===401||r.status===403?"clé refusée":"erreur "+r.status);
+    const ev=extractExtrema(await r.json());if(ev.length<4)throw new Error("réponse non reconnue");
+    apiCache=mergeEv(apiCache.filter(e=>e[0]*1000>Date.now()-40*24*HOUR),ev);
+    try{localStorage.setItem(KEYA,JSON.stringify(apiCache));localStorage.setItem(KEYA+".at",String(Date.now()));}catch(e){}
+    SRC.api=mergeEv(SEED_API,apiCache);loadSrc();render();setTideStatus();}
+  catch(e){setTideStatus(e&&e.message&&!/fetch/i.test(e.message)?e.message:"hors connexion ou service injoignable");}
+  finally{tideBusy=false;}}
+const KEYM="mareeMessenger.meteo";var meteo=null;try{meteo=JSON.parse(localStorage.getItem(KEYM)||"null");}catch(e){meteo=null;}
+async function fetchMeteo(){if(typeof fetch!=="function")return;if(meteo&&Date.now()-meteo.at<HOUR)return;
+  const url="https://api.open-meteo.com/v1/forecast?latitude=44.64&longitude=-1.14&hourly=pressure_msl,wind_speed_10m,wind_direction_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&models=meteofrance_seamless&wind_speed_unit=kn&timeformat=unixtime&timezone=Europe%2FParis&forecast_days=4";
+  try{const r=await fetch(url);if(!r.ok)return;const j=await r.json();if(!j.hourly||!j.daily)return;
+    meteo={at:Date.now(),h:j.hourly,d:j.daily};try{localStorage.setItem(KEYM,JSON.stringify(meteo));}catch(e){}render();}catch(e){}}
+function meteoCovers(t){return !!(meteo&&meteo.h&&meteo.h.time&&meteo.h.time.length&&t>=meteo.h.time[0]*1000&&t<=meteo.h.time[meteo.h.time.length-1]*1000+HOUR);}
+function pressureAt(t){if(pressure!=null)return pressure;
+  if(meteoCovers(t)){const T=meteo.h.time,P=meteo.h.pressure_msl,i=Math.min(T.length-2,Math.max(0,Math.floor((t/1000-T[0])/3600)));
+    const a=P[i],b=P[i+1];if(a!=null&&b!=null){const f=Math.max(0,Math.min(1,(t/1000-T[i])/3600));return a+(b-a)*f;}if(a!=null)return a;}
+  return cfg.model.pDefault;}
+const COMPASS=["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSO","SO","OSO","O","ONO","NO","NNO"];
+const BFT=[1,4,7,11,17,22,28,34,41,48,56,64];
+const ICONS={sun:'<circle cx="12" cy="12" r="4.5"></circle><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"></path>',
+  cloud:'<path d="M7 18h10a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 7.1 9.5 4.25 4.25 0 0 0 7 18z"></path>',
+  cloudsun:'<path d="M9 3.5v1.5M4.2 5.7l1 1M3 10.5h1.5"></path><path d="M6.6 10.6A3.5 3.5 0 0 1 12.4 7"></path><path d="M9 20h8.5a3.5 3.5 0 0 0 .5-6.96A4.8 4.8 0 0 0 9 12.5 3.75 3.75 0 0 0 9 20z"></path>',
+  rain:'<path d="M7 15h10a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 7.1 6.5 4.25 4.25 0 0 0 7 15z"></path><path d="M9 18l-1 2.5M13 18l-1 2.5M17 18l-1 2.5"></path>',
+  fog:'<path d="M4 9h16M3 13h18M5 17h14"></path>',snow:'<path d="M12 4v16M5 8l14 8M19 8L5 16"></path>',
+  storm:'<path d="M7 14h10a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 7.1 5.5 4.25 4.25 0 0 0 7 14z"></path><path d="M12 15l-2 4h3l-2 4"></path>'};
+function wxInfo(c){if(c==null)return null;if(c<=1)return["sun","Ensoleillé"];if(c===2)return["cloudsun","Éclaircies"];if(c===3)return["cloud","Couvert"];
+  if(c<=48)return["fog","Brouillard"];if(c<=57)return["rain","Bruine"];if(c<=67)return["rain","Pluie"];if(c<=77)return["snow","Neige"];if(c<=82)return["rain","Averses"];if(c<=86)return["snow","Neige"];return["storm","Orage"];}
+function renderMeteo(start,end){const box=$("meteo");box.hidden=true;box.replaceChildren();
+  if(!meteo||!meteo.d||!meteo.d.time)return;const key=fmtISO.format(new Date(start+12*HOUR));
+  const i=meteo.d.time.findIndex(t=>fmtISO.format(new Date(t*1000+12*HOUR))===key);if(i<0)return;
+  const wx=wxInfo(meteo.d.weather_code&&meteo.d.weather_code[i]),tmin=meteo.d.temperature_2m_min&&meteo.d.temperature_2m_min[i],tmax=meteo.d.temperature_2m_max&&meteo.d.temperature_2m_max[i];
+  const z=sunFor(start+12*HOUR),T=meteo.h.time||[],S=meteo.h.wind_speed_10m||[],D=meteo.h.wind_direction_10m||[];let n=0,sp=0,sx=0,sy=0;
+  for(let k=0;k<T.length;k++){const t=T[k]*1000;if(t<z.rise||t>z.set||S[k]==null||D[k]==null)continue;n++;sp+=S[k];sx+=Math.sin(D[k]*Math.PI/180);sy+=Math.cos(D[k]*Math.PI/180);}
+  if(!wx&&!n)return;box.hidden=false;
+  if(wx){const ic=document.createElementNS(NS,"svg");ic.setAttribute("width","22");ic.setAttribute("height","22");ic.setAttribute("viewBox","0 0 24 24");ic.setAttribute("fill","none");ic.setAttribute("stroke","currentColor");ic.setAttribute("stroke-width","1.8");ic.setAttribute("stroke-linecap","round");ic.setAttribute("stroke-linejoin","round");ic.setAttribute("aria-hidden","true");ic.innerHTML=ICONS[wx[0]];box.append(ic);}
+  const left=h("span");if(wx)left.append(h("b","",wx[1]));if(tmin!=null&&tmax!=null)left.append(`${wx?" · ":""}${Math.round(tmin)}° – ${Math.round(tmax)}°`);box.append(left);
+  if(n){const kn=sp/n,dir=(Math.atan2(sx,sy)*180/Math.PI+360)%360,bf=BFT.filter(x=>kn>=x).length;
+    const r=h("span");r.style.marginLeft="auto";r.style.display="inline-flex";r.style.alignItems="center";r.style.gap="6px";
+    const ar=document.createElementNS(NS,"svg");ar.setAttribute("width","18");ar.setAttribute("height","18");ar.setAttribute("viewBox","0 0 24 24");ar.setAttribute("fill","none");ar.setAttribute("stroke","currentColor");ar.setAttribute("stroke-width","2");ar.setAttribute("stroke-linecap","round");ar.setAttribute("aria-hidden","true");ar.style.transform=`rotate(${Math.round(dir)}deg)`;ar.innerHTML='<path d="M12 4v16M6 14l6 6 6-6"></path>';
+    r.append(ar,h("b","",`${COMPASS[Math.round(dir/22.5)%16]} ${Math.round(kn)} nds`),` · force ${bf}`);box.append(r);}}
+
+$("tideReload").addEventListener("click",()=>fetchTides(true));
+$("m-key").addEventListener("change",()=>fetchTides(true));
+fill();
+let first=today();const ft=utcFromLocal(first.y,first.m,first.d,12,0);
+if(ft<EV[0].t||ft>EV[EV.length-1].t){const[a,b,c]=fmtISO.format(new Date(EV[0].t+24*HOUR)).split("-").map(Number);first={y:a,m:b,d:c};}
+setDay(first);
+setInterval(()=>{if(!document.hidden)render();},5*60000);
+setTideStatus();fetchTides(false);fetchMeteo();
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){fetchTides(false);fetchMeteo();}});
+if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{});});}
+</script>
+</body>
+</html>
